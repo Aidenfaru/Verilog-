@@ -1,0 +1,50 @@
+`timescale 1ns/1ps
+
+module siso_tb;
+
+reg clk;
+reg reset;
+reg serial_in;
+wire serial_out;
+
+siso uut(
+    .clk(clk),
+    .reset(reset),
+    .serial_in(serial_in),
+    .serial_out(serial_out)
+);
+
+always #5 clk = ~clk;
+
+initial
+begin
+    clk = 0;
+    reset = 1;
+    serial_in = 0;
+
+    #10 reset = 0;
+
+    // Send 1
+    serial_in = 1;
+    #10;
+
+    // Send 0
+    serial_in = 0;
+    #10;
+
+    // Send 1
+    serial_in = 1;
+    #10;
+
+    // Send 1
+    serial_in = 1;
+    #10;
+
+    // Extra clocks to observe output
+    serial_in = 0;
+    #40;
+
+    $finish;
+end
+
+endmodule
