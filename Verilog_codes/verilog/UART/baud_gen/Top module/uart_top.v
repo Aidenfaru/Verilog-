@@ -1,85 +1,68 @@
-`timescale 1ns / 1ps
+module uart_top
+#(
+    parameter CLK_FREQ  = 100_000_000,
+    parameter BAUD_RATE = 9600
+)
+(
+    input  wire clk,
+    input  wire rst,
 
-module uart_top_tb;
+    input  wire tx_start,
+    input  wire [7:0] tx_data,
 
-    reg clk;
-    reg rst;
-    reg tx_start;
-    reg [7:0] tx_data;
+    // UART Pins
+    output wire tx,
+    input  wire rx,
 
-    wire tx;
-    wire tx_busy;
-    wire [7:0] rx_data;
-    wire rx_done;
+    output wire tx_busy,
+    output wire [7:0] rx_data,
+    output wire rx_done
+);
 
     //--------------------------------------------------
-    // Instantiate UART Top
+    // Internal Signal
     //--------------------------------------------------
 
-    uart_top #(
-        .CLK_FREQ(100),
-        .BAUD_RATE(10)
-    ) uut (
+    wire baud_tick;
+
+    //--------------------------------------------------
+    // Baud Generator
+    //--------------------------------------------------
+
+    baud_gen #(
+        .CLK_FREQ(CLK_FREQ),
+        .BAUD_RATE(BAUD_RATE)
+    ) baud_inst (
         .clk(clk),
         .rst(rst),
-        .tx_start(tx_start),
-        .tx_data(tx_data),
-        .tx(tx),
-        .tx_busy(tx_busy),
-        .rx_data(rx_data),
-        .rx_done(rx_done)
+        .baud_tick(baud_tick)
     );
 
     //--------------------------------------------------
-    // Clock Generation
+    // UART Transmitter
     //--------------------------------------------------
 
-    initial begin
-        clk = 0;
-        forever #5 clk = ~clk;
-    end
+    uart_tx tx_inst (
+        .clk(clk),
+        .rst(rst),
+        .baud_tick(baud_tick),
+        .tx_start(tx_start),
+        .data_in(tx_data),
+        .tx(tx),
+        .tx_busy(tx_busy)
+    );
 
     //--------------------------------------------------
-    // Stimulus
+    // UART Receiver
     //--------------------------------------------------
 
-    initial begin
-
-        rst = 1;
-        tx_start = 0;
-        tx_data = 8'h00;
-
-        #20;
-        rst = 0;
-
-        // Send first byte
-        #20;
-        tx_data = 8'h41;
-        tx_start = 1;
-        #10;
-        tx_start = 0;
-
-        // Wait for transmission to finish
-        #1200;
-
-        // Send second byte
-        tx_data = 8'h55;
-        tx_start = 1;
-        #10;
-        tx_start = 0;
-
-        #1200;
-
-        // Send third byte
-        tx_data = 8'hAA;
-        tx_start = 1;
-        #10;
-        tx_start = 0;
-
-        #1200;
-
-        $finish;
-
-    end
+    uart_rx rx_inst (
+        .clk(clk),
+        .rst(rst),
+        .baud_tick(baud_tick),
+        .rx(rx),
+        .data_out(rx_data),
+        .rx_done(rx_done)
+    );
 
 endmodule

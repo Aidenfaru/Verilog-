@@ -1,134 +1,116 @@
-`timescale 1ns / 1ps
+`timescale 1ns/1ps
 
 module uart_top_tb;
 
-    //--------------------------------------------------
-    // Testbench Signals
-    //--------------------------------------------------
+reg clk;
+reg rst;
+reg tx_start;
+reg [7:0] tx_data;
 
-    reg clk;
-    reg rst;
-    reg tx_start;
-    reg [7:0] tx_data;
+// UART Serial Wire
+wire serial_wire;
 
-    wire tx;
-    wire tx_busy;
-    wire [7:0] rx_data;
-    wire rx_done;
+wire tx_busy;
+wire [7:0] rx_data;
+wire rx_done;
 
-    //--------------------------------------------------
-    // Instantiate DUT
-    //--------------------------------------------------
+//////////////////////////////////////////////////////
+// DUT
+//////////////////////////////////////////////////////
 
-    uart_top #(
-        .CLK_FREQ(100),
-        .BAUD_RATE(10)
-    ) uut (
-        .clk(clk),
-        .rst(rst),
-        .tx_start(tx_start),
-        .tx_data(tx_data),
-        .tx(tx),
-        .tx_busy(tx_busy),
-        .rx_data(rx_data),
-        .rx_done(rx_done)
-    );
+uart_top #(
+    .CLK_FREQ(100),
+    .BAUD_RATE(10)
+)
+uut
+(
+    .clk(clk),
+    .rst(rst),
 
-    //--------------------------------------------------
-    // Clock Generation
-    //--------------------------------------------------
+    .tx_start(tx_start),
+    .tx_data(tx_data),
 
-    initial
-    begin
-        clk = 0;
-        forever #5 clk = ~clk;
-    end
+    .tx(serial_wire),
+    .rx(serial_wire),     // Loopback connection
 
-    //--------------------------------------------------
-    // Stimulus
-    //--------------------------------------------------
+    .tx_busy(tx_busy),
+    .rx_data(rx_data),
+    .rx_done(rx_done)
+);
 
-    initial
-    begin
+//////////////////////////////////////////////////////
+// Clock
+//////////////////////////////////////////////////////
 
-        rst = 1;
-        tx_start = 0;
-        tx_data = 8'h00;
+initial
+begin
+    clk = 0;
+    forever #5 clk = ~clk;
+end
 
-        #20;
-        rst = 0;
+//////////////////////////////////////////////////////
+// Stimulus
+//////////////////////////////////////////////////////
 
-        //--------------------------------------------------
-        // Send Character 'A'
-        //--------------------------------------------------
+initial
+begin
 
-        #20;
-        tx_data = 8'h41;
-        tx_start = 1;
+    rst = 1;
+    tx_start = 0;
+    tx_data = 8'h00;
 
-        #10;
-        tx_start = 0;
+    #20;
+    rst = 0;
 
-        wait(rx_done);
+    //-----------------------------
+    // Send A
+    //-----------------------------
+    #20;
+    tx_data = 8'h41;
+    tx_start = 1;
+    #10;
+    tx_start = 0;
 
-        $display("Received = %h", rx_data);
+    #1200;
 
-        //--------------------------------------------------
-        // Send 0x55
-        //--------------------------------------------------
+    //-----------------------------
+    // Send 55
+    //-----------------------------
+    tx_data = 8'h55;
+    tx_start = 1;
+    #10;
+    tx_start = 0;
 
-        #100;
+    #1200;
 
-        tx_data = 8'h55;
-        tx_start = 1;
+    //-----------------------------
+    // Send AA
+    //-----------------------------
+    tx_data = 8'hAA;
+    tx_start = 1;
+    #10;
+    tx_start = 0;
 
-        #10;
-        tx_start = 0;
+    #1200;
 
-        wait(rx_done);
+    $finish;
 
-        $display("Received = %h", rx_data);
+end
 
-        //--------------------------------------------------
-        // Send 0xAA
-        //--------------------------------------------------
+//////////////////////////////////////////////////////
+// Monitor
+//////////////////////////////////////////////////////
 
-        #100;
+initial
+begin
 
-        tx_data = 8'hAA;
-        tx_start = 1;
+$monitor("Time=%0t TX=%b Busy=%b RX_DONE=%b RX_DATA=%h",
+         $time,
+         serial_wire,
+         tx_busy,
+         rx_done,
+         rx_data);
 
-        #10;
-        tx_start = 0;
-
-        wait(rx_done);
-
-        $display("Received = %h", rx_data);
-
-        //--------------------------------------------------
-        // End Simulation
-        //--------------------------------------------------
-
-        #200;
-
-        $finish;
-
-    end
-
-    //--------------------------------------------------
-    // Monitor
-    //--------------------------------------------------
-
-    initial
-    begin
-
-        $monitor("Time=%0t | TX=%b | Busy=%b | RX_DONE=%b | RX_DATA=%h",
-                 $time,
-                 tx,
-                 tx_busy,
-                 rx_done,
-                 rx_data);
-
-    end
+end
 
 endmodule
