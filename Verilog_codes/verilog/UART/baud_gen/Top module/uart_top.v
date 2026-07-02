@@ -1,62 +1,85 @@
-module uart_top
-#(
-    parameter CLK_FREQ  = 100_000_000,
-    parameter BAUD_RATE = 9600
-)
-(
-    input  wire clk,
-    input  wire rst,
+`timescale 1ns / 1ps
 
-    input  wire tx_start,
-    input  wire [7:0] tx_data,
+module uart_top_tb;
 
-    output wire tx,
-    output wire tx_busy,
+    reg clk;
+    reg rst;
+    reg tx_start;
+    reg [7:0] tx_data;
 
-    output wire [7:0] rx_data,
-    output wire rx_done
-);
+    wire tx;
+    wire tx_busy;
+    wire [7:0] rx_data;
+    wire rx_done;
 
     //--------------------------------------------------
-    // Internal Signals
+    // Instantiate UART Top
     //--------------------------------------------------
-    wire baud_tick;
 
-    //--------------------------------------------------
-    // Baud Generator
-    //--------------------------------------------------
-    baud_gen #(
-        .CLK_FREQ(CLK_FREQ),
-        .BAUD_RATE(BAUD_RATE)
-    ) baud_inst (
+    uart_top #(
+        .CLK_FREQ(100),
+        .BAUD_RATE(10)
+    ) uut (
         .clk(clk),
         .rst(rst),
-        .baud_tick(baud_tick)
-    );
-
-    //--------------------------------------------------
-    // UART Transmitter
-    //--------------------------------------------------
-    uart_tx tx_inst (
-        .clk(clk),
-        .rst(rst),
-        .baud_tick(baud_tick),
         .tx_start(tx_start),
-        .data_in(tx_data),
+        .tx_data(tx_data),
         .tx(tx),
-        .tx_busy(tx_busy)
-    );
-
-    //--------------------------------------------------
-    // UART Receiver
-    //--------------------------------------------------
-    uart_rx rx_inst (
-        .clk(clk),
-        .rst(rst),
-        .baud_tick(baud_tick),
-        .rx(tx),              // Loopback connection
-        .data_out(rx_data),
+        .tx_busy(tx_busy),
+        .rx_data(rx_data),
         .rx_done(rx_done)
     );
+
+    //--------------------------------------------------
+    // Clock Generation
+    //--------------------------------------------------
+
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
+
+    //--------------------------------------------------
+    // Stimulus
+    //--------------------------------------------------
+
+    initial begin
+
+        rst = 1;
+        tx_start = 0;
+        tx_data = 8'h00;
+
+        #20;
+        rst = 0;
+
+        // Send first byte
+        #20;
+        tx_data = 8'h41;
+        tx_start = 1;
+        #10;
+        tx_start = 0;
+
+        // Wait for transmission to finish
+        #1200;
+
+        // Send second byte
+        tx_data = 8'h55;
+        tx_start = 1;
+        #10;
+        tx_start = 0;
+
+        #1200;
+
+        // Send third byte
+        tx_data = 8'hAA;
+        tx_start = 1;
+        #10;
+        tx_start = 0;
+
+        #1200;
+
+        $finish;
+
+    end
 
 endmodule
