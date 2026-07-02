@@ -8,6 +8,7 @@ module uart_rx(
     output reg        rx_done
 );
 
+    // State Encoding
     localparam IDLE  = 2'd0;
     localparam START = 2'd1;
     localparam DATA  = 2'd2;
@@ -29,6 +30,7 @@ module uart_rx(
         end
         else
         begin
+            // Default
             rx_done <= 1'b0;
 
             case (state)
@@ -45,7 +47,7 @@ module uart_rx(
                 end
 
                 //---------------------------------
-                // Verify Start Bit
+                // Start Bit
                 //---------------------------------
                 START:
                 begin
@@ -59,7 +61,7 @@ module uart_rx(
                 end
 
                 //---------------------------------
-                // Receive 8 Data Bits
+                // Receive Data
                 //---------------------------------
                 DATA:
                 begin
@@ -89,12 +91,15 @@ module uart_rx(
                         if (rx == 1'b1)
                         begin
                             data_out <= shift_reg;
-                            rx_done <= 1'b1;
+                            rx_done  <= 1'b1;
                         end
 
                         state <= IDLE;
                     end
                 end
+
+                default:
+                    state <= IDLE;
 
             endcase
         end

@@ -10,7 +10,6 @@ module uart_top
     input  wire tx_start,
     input  wire [7:0] tx_data,
 
-    // UART Pins
     output wire tx,
     input  wire rx,
 
@@ -20,7 +19,7 @@ module uart_top
 );
 
     //--------------------------------------------------
-    // Internal Signal
+    // Baud Tick
     //--------------------------------------------------
 
     wire baud_tick;
@@ -32,35 +31,41 @@ module uart_top
     baud_gen #(
         .CLK_FREQ(CLK_FREQ),
         .BAUD_RATE(BAUD_RATE)
-    ) baud_inst (
+    )
+    baud_inst
+    (
         .clk(clk),
         .rst(rst),
         .baud_tick(baud_tick)
     );
 
     //--------------------------------------------------
-    // UART Transmitter
+    // UART TX
     //--------------------------------------------------
 
-    uart_tx tx_inst (
+    uart_tx tx_inst
+    (
         .clk(clk),
         .rst(rst),
         .baud_tick(baud_tick),
         .tx_start(tx_start),
         .data_in(tx_data),
+
         .tx(tx),
         .tx_busy(tx_busy)
     );
 
     //--------------------------------------------------
-    // UART Receiver
+    // UART RX
     //--------------------------------------------------
 
-    uart_rx rx_inst (
+    uart_rx rx_inst
+    (
         .clk(clk),
         .rst(rst),
         .baud_tick(baud_tick),
         .rx(rx),
+
         .data_out(rx_data),
         .rx_done(rx_done)
     );
